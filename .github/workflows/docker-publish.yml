@@ -11,7 +11,7 @@ on:
   push:
     branches: [ "main" ]
     # Publish semver tags as releases.
-    tags: [ 'v*.*.*' ]
+    tags: [ '*.*.*' ]
   pull_request:
     branches: [ "main" ]
 
@@ -21,7 +21,7 @@ env:
   # github.repository as <account>/<repo>
   IMAGE_NAME: ${{ github.repository }}
   # n8n version
-  N8N_VERSION: '0.222.2'
+  N8N_VERSION: '0.224.1'
 
 
 jobs:
