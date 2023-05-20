@@ -1,2 +1,2 @@
 #!/bin/bash
-export N8N_VERSION=0.228.1
+export N8N_VERSION=0.228.2
