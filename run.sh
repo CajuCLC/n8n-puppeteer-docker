@@ -1,5 +1,5 @@
 #!/bin/bash
-source ./env.sh
+source .env
 docker stop n8n
 docker rm n8n
 docker run -d -it \
