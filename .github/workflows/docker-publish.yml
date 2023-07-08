@@ -20,8 +20,6 @@ env:
   REGISTRY: ghcr.io
   # github.repository as <account>/<repo>
   IMAGE_NAME: ${{ github.repository }}
-  # n8n version
-  N8N_VERSION: '0.227.1'
 
 
 jobs:
@@ -47,6 +45,10 @@ jobs:
         with:
           cosign-release: 'v1.13.1'
 
+      # Read dotenv file
+      # https://github.com/xom9ikk/dotenv
+      - name: Load .env file
+        uses: xom9ikk/dotenv@v2
 
       # Workaround: https://github.com/docker/build-push-action/issues/461
       - name: Setup Docker buildx
