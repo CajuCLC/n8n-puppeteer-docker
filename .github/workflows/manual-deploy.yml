@@ -11,25 +11,58 @@ jobs:
   check_tag:
     runs-on: ubuntu-latest
 
+    outputs:
+      exists: ${{ steps.tag_check.outputs.exists }}
+
     steps:
     - name: Checkout
       uses: actions/checkout@v2
       with:
         fetch-depth: 0
 
-    - name: Check if tag exists
+    - id: tag_check
+      name: Check if tag exists
       run: |
         if git rev-parse --verify --quiet ${{ github.event.inputs.releaseTag }}; then
-          echo "Tag ${{ github.event.inputs.releaseTag }} exists"
+          echo "::set-output name=exists::true"
         else
-          echo "Tag ${{ github.event.inputs.releaseTag }} does not exist"
+          echo "::set-output name=exists::false"
           exit 1
         fi
 
-    - name: Determine release type and print message
+  determine_release:
+    needs: check_tag
+    runs-on: ubuntu-latest
+
+    outputs:
+      releaseType: ${{ steps.release_type.outputs.type }}
+
+    steps:
+    - id: release_type
+      name: Determine release type
       run: |
         if [[ "${{ github.event.inputs.releaseTag }}" == *.beta ]]; then
-          echo "Hello Pre-release World! You provided tag: ${{ github.event.inputs.releaseTag }}"
+          echo "::set-output name=type::pre-release"
         else
-          echo "Hello Production World! You provided tag: ${{ github.event.inputs.releaseTag }}"
+          echo "::set-output name=type::production"
         fi
+
+  pre_release_print:
+    needs: determine_release
+    runs-on: ubuntu-latest
+    if: needs.determine_release.outputs.releaseType == 'pre-release'
+
+    steps:
+    - name: Print Pre-release Message
+      run: |
+        echo "Hello Pre-release World! You provided tag: ${{ github.event.inputs.releaseTag }}"
+
+  production_print:
+    needs: determine_release
+    runs-on: ubuntu-latest
+    if: needs.determine_release.outputs.releaseType == 'production'
+
+    steps:
+    - name: Print Production Message
+      run: |
+        echo "Hello Production World! You provided tag: ${{ github.event.inputs.releaseTag }}"
