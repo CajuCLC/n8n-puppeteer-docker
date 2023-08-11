@@ -2,10 +2,6 @@ name: Manual Deploy
 
 on:
   workflow_dispatch:
-    inputs:
-      releaseTag:
-        description: 'Enter the release tag:'
-        required: true
 
 jobs:
   manual-deploy:
@@ -41,9 +37,21 @@ jobs:
               options: ${{ steps.list_tags.outputs.result }},
             },
           ];
-          await github.issues.createComment({
-            owner: context.repo.owner,
-            repo: context.repo.repo,
-            issue_number,
-            body: `${message}\n\n${JSON.stringify(dropdowns)}`,
-          });
+          const body = `${message}\n\n${JSON.stringify(dropdowns)}`;
+          const comment = issues[0].comments.nodes.find(comment => comment.body === body);
+          if (comment) {
+            const comment_id = comment.id;
+            await github.reactions.createForIssueComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              comment_id,
+              content: 'rocket',
+            });
+          } else {
+            await github.issues.createComment({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              issue_number,
+              body,
+            });
+          }
