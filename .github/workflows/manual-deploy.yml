@@ -12,6 +12,14 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
+    - name: Check if tag exists
+      run: |
+        if git rev-parse --verify --quiet ${{ github.event.inputs.releaseTag }}; then
+          echo "Tag ${{ github.event.inputs.releaseTag }} exists"
+        else
+          echo "Tag ${{ github.event.inputs.releaseTag }} does not exist"
+        fi
     - name: Print Hello World with Tag
+      if: success()
       run: |
         echo "Hello World! You provided tag: ${{ github.event.inputs.releaseTag }}"
