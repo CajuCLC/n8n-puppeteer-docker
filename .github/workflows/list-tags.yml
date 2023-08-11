@@ -8,7 +8,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
     - name: Get tags
-      uses: actions/github-script@v4
+      uses: actions/github-script@v6
       with:
         script: |
           const { data: tags } = await github.git.listMatchingRefs({
