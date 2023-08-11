@@ -8,7 +8,7 @@ on:
         required: true
 
 jobs:
-  hello_world:
+  check_tag:
     runs-on: ubuntu-latest
 
     steps:
@@ -23,8 +23,23 @@ jobs:
           echo "Tag ${{ github.event.inputs.releaseTag }} exists"
         else
           echo "Tag ${{ github.event.inputs.releaseTag }} does not exist"
+          exit 1
         fi
+
+    - name: Check if tag is pre-release
+      run: |
+        if git tag -l --format='%(objectname) %(refname:short)' ${{ github.event.inputs.releaseTag }} | grep -q 'refs/tags/${{ github.event.inputs.releaseTag }}-'; then
+          echo "Tag ${{ github.event.inputs.releaseTag }} is a pre-release"
+        else
+          echo "Tag ${{ github.event.inputs.releaseTag }} is production"
+        fi
+
+  hello_world:
+    needs: check_tag
+    runs-on: ubuntu-latest
+
+    steps:
     - name: Print Hello World with Tag
-      if: success()
+      if: needs.check_tag.result == 'success'
       run: |
         echo "Hello World! You provided tag: ${{ github.event.inputs.releaseTag }}"
