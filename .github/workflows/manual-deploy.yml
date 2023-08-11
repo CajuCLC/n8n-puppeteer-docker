@@ -28,7 +28,7 @@ jobs:
 
     - name: Check if tag is pre-release
       run: |
-        if git tag -l --format='%(objectname) %(refname:short)' ${{ github.event.inputs.releaseTag }} | grep -q 'refs/tags/${{ github.event.inputs.releaseTag }}-'; then
+        if git tag -l --format='%(objectname) %(refname:short)' ${{ github.event.inputs.releaseTag }} | grep -q -- '-'; then
           echo "Tag ${{ github.event.inputs.releaseTag }} is a pre-release"
         else
           echo "Tag ${{ github.event.inputs.releaseTag }} is production"
