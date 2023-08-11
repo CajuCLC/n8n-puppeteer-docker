@@ -16,4 +16,4 @@ jobs:
             repo: context.repo.repo,
             ref: 'refs/tags/'
           });
-          console.log('Tags:', tags.map(tag => tag.ref.slice('refs/tags/'.length)));
+          console.log('Tags:', tags.map(tag => tag.ref.replace('refs/tags/', '')));
