@@ -1,19 +1,31 @@
-name: List Tags
+name: Manual Deploy
 
 on:
   workflow_dispatch:
 
 jobs:
-  list_tags:
+  manual-deploy:
     runs-on: ubuntu-latest
     steps:
-    - name: Get tags
-      uses: actions/github-script@v6
+    - name: List Tags
+      uses: actions/github-script@v5
       with:
         script: |
-          const { data: tags } = await github.git.listMatchingRefs({
+          const { data } = await github.git.listMatchingRefs({
             owner: context.repo.owner,
             repo: context.repo.repo,
-            ref: 'refs/tags/'
+            ref: 'refs/tags/',
           });
-          console.log('Tags:', tags.map(tag => tag.ref.replace('refs/tags/', '')));
+          const tags = data.map(ref => ref.ref.replace('refs/tags/', ''));
+          console.log(JSON.stringify(tags));
+    - name: Select Tag UI
+      if: always()
+      uses: appleboy/label-commenter@master
+      with:
+        token: ${{ secrets.GITHUB_TOKEN }}
+        issue_number: ${{ github.event.issue.number }}
+        labels: 'manual-deploy'
+        message: 'Please select a tag to deploy:'
+        dropdowns: |
+          - name: 'Tag'
+            options: ${{ steps.list_tags.outputs.result }}
