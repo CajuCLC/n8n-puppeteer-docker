@@ -6,6 +6,7 @@ on:
       releaseTag:
         description: 'Enter the release tag:'
         required: true
+        options: ${{ secrets.tags }}
 
 jobs:
   check_tag:

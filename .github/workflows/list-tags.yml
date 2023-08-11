@@ -1,0 +1,19 @@
+name: List Tags
+
+on:
+  workflow_dispatch:
+
+jobs:
+  list_tags:
+    runs-on: ubuntu-latest
+    steps:
+    - name: Get tags
+      uses: actions/github-script@v4
+      with:
+        script: |
+          const { data: tags } = await github.git.listMatchingRefs({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            ref: 'refs/tags/'
+          });
+          console.log('Tags:', tags.map(tag => tag.ref.replace('refs/tags/', '')));
