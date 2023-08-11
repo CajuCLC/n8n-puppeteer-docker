@@ -26,20 +26,10 @@ jobs:
           exit 1
         fi
 
-    - name: Check if tag is pre-release
+    - name: Determine release type and print message
       run: |
-        if git tag -l --format='%(objectname) %(refname:short)' ${{ github.event.inputs.releaseTag }} | grep -q -- '-'; then
-          echo "Tag ${{ github.event.inputs.releaseTag }} is a pre-release"
+        if [[ "${{ github.event.inputs.releaseTag }}" == *.beta ]]; then
+          echo "Hello Pre-release World! You provided tag: ${{ github.event.inputs.releaseTag }}"
         else
-          echo "Tag ${{ github.event.inputs.releaseTag }} is production"
+          echo "Hello Production World! You provided tag: ${{ github.event.inputs.releaseTag }}"
         fi
-
-  hello_world:
-    needs: check_tag
-    runs-on: ubuntu-latest
-
-    steps:
-    - name: Print Hello World with Tag
-      if: needs.check_tag.result == 'success'
-      run: |
-        echo "Hello World! You provided tag: ${{ github.event.inputs.releaseTag }}"
