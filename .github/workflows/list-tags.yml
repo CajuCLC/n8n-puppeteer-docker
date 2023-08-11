@@ -1,18 +1,42 @@
-name: List Tags
+name: Manual Deploy
 
 on:
   workflow_dispatch:
+    inputs:
+      releaseTag:
+        description: 'Enter the release tag:'
+        required: true
 
 jobs:
-  list_tags:
+  manual-deploy:
     runs-on: ubuntu-latest
-    outputs:
-      tags: ${{ steps.list_tags.outputs.tags }}
     steps:
-    - name: Checkout
-      uses: actions/checkout@v2
     - name: List Tags
-      id: list_tags
-      run: |
-        git fetch --tags
-        echo "${{ toJson(git tag -l) }}" | jq -R . | jq -s .
+      uses: actions/github-script@v5
+      with:
+        script: |
+          const { data } = await github.git.listMatchingRefs({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            ref: 'refs/tags/',
+          });
+          const tags = data.map(ref => ref.ref.replace('refs/tags/', ''));
+          console.log(JSON.stringify(tags));
+    - name: Select Tag UI
+      if: always()
+      uses: actions/github-script@v5
+      with:
+        script: |
+          const { data: issues } = await github.issues.list({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            issue_number: context.issue.number,
+          });
+          const issue = issues[0];
+          const comment = `Please select a tag to deploy:\n\n<details><summary>Tags</summary>${JSON.parse('${{ toJson(steps.list_tags.outputs.result) }}').map(tag => `- ${tag}`).join('\n')}</details>`;
+          await github.issues.createComment({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            issue_number: context.issue.number,
+            body: comment,
+          });

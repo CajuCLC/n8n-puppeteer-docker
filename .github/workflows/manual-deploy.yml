@@ -6,7 +6,6 @@ on:
       releaseTag:
         description: 'Enter the release tag:'
         required: true
-        options: ${{ secrets.tags }}
 
 jobs:
   check_tag:
@@ -14,9 +13,29 @@ jobs:
 
     steps:
     - name: Checkout
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
       with:
         fetch-depth: 0
+
+    - name: Check tag position
+      run: |
+        # Get all tags sorted by date (latest first)
+        all_tags=($(git tag --sort=-creatordate))
+        
+        # Get the position of the provided tag
+        tag_position=-1
+        for i in "${!all_tags[@]}"; do
+           if [[ "${all_tags[$i]}" == "${{ github.event.inputs.releaseTag }}" ]]; then
+               tag_position=$i
+               break
+           fi
+        done
+        
+        # Check the tag position
+        if [[ $tag_position -gt 4 || $tag_position -lt 0 ]]; then
+           echo "Provided tag is more than 5 tags before the latest or doesn't exist."
+           exit 1
+        fi
 
     - name: Check if tag exists
       run: |
@@ -59,7 +78,7 @@ jobs:
 
   hello_production:
     needs: determine_release
-    if: needs.determine_release.outputs.release == 'false'
+    if: needs.determine_release.outputs.release == 'production'
     runs-on: ubuntu-latest
 
     steps:
