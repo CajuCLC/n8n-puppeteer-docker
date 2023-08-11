@@ -11,22 +11,18 @@ jobs:
   check_tag:
     runs-on: ubuntu-latest
 
-    outputs:
-      exists: ${{ steps.tag_check.outputs.exists }}
-
     steps:
     - name: Checkout
       uses: actions/checkout@v2
       with:
         fetch-depth: 0
 
-    - id: tag_check
-      name: Check if tag exists
+    - name: Check if tag exists
       run: |
         if git rev-parse --verify --quiet ${{ github.event.inputs.releaseTag }}; then
-          echo "::set-output name=exists::true"
+          echo "Tag ${{ github.event.inputs.releaseTag }} exists"
         else
-          echo "::set-output name=exists::false"
+          echo "Tag ${{ github.event.inputs.releaseTag }} does not exist"
           exit 1
         fi
 
@@ -35,34 +31,35 @@ jobs:
     runs-on: ubuntu-latest
 
     outputs:
-      releaseType: ${{ steps.release_type.outputs.type }}
+      is_pre_release: ${{ steps.check_pre_release.outputs.is_pre_release }}
 
     steps:
-    - id: release_type
-      name: Determine release type
+    - name: Check if tag is pre-release
+      id: check_pre_release
+      if: needs.check_tag.result == 'success'
       run: |
-        if [[ "${{ github.event.inputs.releaseTag }}" == *.beta ]]; then
-          echo "::set-output name=type::pre-release"
+        if [[ "${{ github.event.inputs.releaseTag }}" == *".beta" ]]; then
+          echo "true" >> $GITHUB_ENV
         else
-          echo "::set-output name=type::production"
+          echo "false" >> $GITHUB_ENV
         fi
 
-  pre_release_print:
+  hello_pre_release:
     needs: determine_release
+    if: needs.determine_release.outputs.is_pre_release == 'true'
     runs-on: ubuntu-latest
-    if: needs.determine_release.outputs.releaseType == 'pre-release'
 
     steps:
-    - name: Print Pre-release Message
+    - name: Print Hello Pre-Release World with Tag
       run: |
-        echo "Hello Pre-release World! You provided tag: ${{ github.event.inputs.releaseTag }}"
+        echo "Hello Pre-Release World! You provided tag: ${{ github.event.inputs.releaseTag }}"
 
-  production_print:
+  hello_production:
     needs: determine_release
+    if: needs.determine_release.outputs.is_pre_release == 'false'
     runs-on: ubuntu-latest
-    if: needs.determine_release.outputs.releaseType == 'production'
 
     steps:
-    - name: Print Production Message
+    - name: Print Hello Production World with Tag
       run: |
         echo "Hello Production World! You provided tag: ${{ github.event.inputs.releaseTag }}"
