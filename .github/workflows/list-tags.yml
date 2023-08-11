@@ -1,63 +1,18 @@
-name: Manual Deploy
+name: List Tags
 
 on:
   workflow_dispatch:
 
 jobs:
-  manual-deploy:
+  list_tags:
     runs-on: ubuntu-latest
+    outputs:
+      tags: ${{ steps.list_tags.outputs.tags }}
     steps:
+    - name: Checkout
+      uses: actions/checkout@v2
     - name: List Tags
-      uses: actions/github-script@v5
-      with:
-        script: |
-          const token = process.env.MY_GITHUB_TOKEN;
-          const { data } = await github.git.listMatchingRefs({
-            owner: context.repo.owner,
-            repo: context.repo.repo,
-            ref: 'refs/tags/',
-          });
-          const tags = data.map(ref => ref.ref.replace('refs/tags/', ''));
-          console.log(JSON.stringify(tags));
-        env:
-          MY_GITHUB_TOKEN: ${{ secrets.MY_GITHUB_TOKEN }}
-    - name: Select Tag UI
-      if: always()
-      uses: actions/github-script@v5
-      with:
-        script: |
-          const token = process.env.MY_GITHUB_TOKEN;
-          const { data: issues } = await github.issues.listForRepo({
-            owner: context.repo.owner,
-            repo: context.repo.repo,
-            state: 'open',
-            labels: 'manual-deploy',
-          });
-          const issue_number = issues[0].number;
-          const message = 'Please select a tag to deploy:';
-          const dropdowns = [
-            {
-              name: 'Tag',
-              options: ${{ steps.list_tags.outputs.result }},
-            },
-          ];
-          const body = `${message}\n\n${JSON.stringify(dropdowns)}`;
-          const comment = issues[0].comments.nodes.find(comment => comment.body === body);
-          if (comment) {
-            const comment_id = comment.id;
-            await github.reactions.createForIssueComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              comment_id,
-              content: 'rocket',
-            });
-          } else {
-            await github.issues.createComment({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              issue_number,
-              body,
-            });
-          }
-        env:
-          MY_GITHUB_TOKEN: ${{ secrets.MY_GITHUB_TOKEN }}
+      id: list_tags
+      run: |
+        git fetch --tags
+        echo "${{ toJson(git tag -l) }}" | jq -R . | jq -s .
