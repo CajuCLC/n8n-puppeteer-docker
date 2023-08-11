@@ -17,10 +17,26 @@ jobs:
       with:
         fetch-depth: 0
 
+    - name: Check if tag exists
+      run: |
+        if git rev-parse --verify --quiet ${{ github.event.inputs.releaseTag }}; then
+          echo "Tag ${{ github.event.inputs.releaseTag }} exists"
+        else
+          echo "Tag ${{ github.event.inputs.releaseTag }} does not exist"
+          exit 1
+        fi
+
+    - name: Validate tag format
+      run: |
+        if [[ ! "${{ github.event.inputs.releaseTag }}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+           echo "Provided tag does not match the desired format or contains .beta/.hotfix."
+           exit 1
+        fi
+
     - name: Check tag position
       run: |
-        # Get all tags sorted by date (latest first)
-        all_tags=($(git tag --sort=-creatordate))
+        # Get all tags sorted by date (latest first) and filter out pre-release tags
+        all_tags=($(git tag --sort=-creatordate | grep -v "\.beta" | grep -v "\.hotfix"))
         
         # Get the position of the provided tag
         tag_position=-1
@@ -35,15 +51,6 @@ jobs:
         if [[ $tag_position -gt 4 || $tag_position -lt 0 ]]; then
            echo "Provided tag is more than 5 tags before the latest or doesn't exist."
            exit 1
-        fi
-
-    - name: Check if tag exists
-      run: |
-        if git rev-parse --verify --quiet ${{ github.event.inputs.releaseTag }}; then
-          echo "Tag ${{ github.event.inputs.releaseTag }} exists"
-        else
-          echo "Tag ${{ github.event.inputs.releaseTag }} does not exist"
-          exit 1
         fi
 
   determine_release:
