@@ -1,0 +1,17 @@
+name: Manual Hello World Workflow
+
+on:
+  workflow_dispatch:
+    inputs:
+      releaseTag:
+        description: 'Enter the release tag:'
+        required: true
+
+jobs:
+  hello_world:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Print Hello World with Tag
+      run: |
+        echo "Hello World! You provided tag: ${{ github.event.inputs.releaseTag }}"
