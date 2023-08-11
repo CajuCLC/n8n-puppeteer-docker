@@ -2,6 +2,10 @@ name: Manual Deploy
 
 on:
   workflow_dispatch:
+    inputs:
+      releaseTag:
+        description: 'Enter the release tag:'
+        required: true
 
 jobs:
   manual-deploy:
@@ -20,12 +24,26 @@ jobs:
           console.log(JSON.stringify(tags));
     - name: Select Tag UI
       if: always()
-      uses: appleboy/label-commenter@master
+      uses: actions/github-script@v5
       with:
-        token: ${{ secrets.GITHUB_TOKEN }}
-        issue_number: ${{ github.event.issue.number }}
-        labels: 'manual-deploy'
-        message: 'Please select a tag to deploy:'
-        dropdowns: |
-          - name: 'Tag'
-            options: ${{ steps.list_tags.outputs.result }}
+        script: |
+          const { data: issues } = await github.issues.listForRepo({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            state: 'open',
+            labels: 'manual-deploy',
+          });
+          const issue_number = issues[0].number;
+          const message = 'Please select a tag to deploy:';
+          const dropdowns = [
+            {
+              name: 'Tag',
+              options: ${{ steps.list_tags.outputs.result }},
+            },
+          ];
+          await github.issues.createComment({
+            owner: context.repo.owner,
+            repo: context.repo.repo,
+            issue_number,
+            body: `${message}\n\n${JSON.stringify(dropdowns)}`,
+          });
