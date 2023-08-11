@@ -39,9 +39,9 @@ jobs:
       if: needs.check_tag.result == 'success'
       run: |
         if [[ "${{ github.event.inputs.releaseTag }}" == *".beta" ]]; then
-          echo "is_pre_release=true" >> $GITHUB_ENV
+          echo "is_pre_release=true" >> $GITHUB_OUTPUT
         else
-          echo "is_pre_release=false" >> $GITHUB_ENV
+          echo "is_pre_release=false" >> $GITHUB_OUTPUT
         fi
 
   hello_pre_release:
