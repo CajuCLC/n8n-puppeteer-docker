@@ -33,12 +33,14 @@ jobs:
            exit 1
         fi
 
-    - name: Test GitHub Script Action
+    - name: Fetch and log release details
       uses: actions/github-script@v5
       with:
         script: |
-          console.log('Provided Tag:', context.payload.inputs.releaseTag);
-
+          const tag = context.payload.inputs.releaseTag;
+          const { owner, repo } = context.repo;
+          const release = await github.rest.repos.getReleaseByTag({ owner, repo, tag });
+          console.log('Release Details:', release.data);
 
     - name: Check if tag is associated with a pre-release on GitHub
       uses: actions/github-script@v5
