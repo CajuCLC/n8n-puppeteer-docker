@@ -37,7 +37,7 @@ jobs:
       uses: actions/github-script@v5
       with:
         script: |
-          const tag = context.event.inputs.releaseTag;
+          const tag = context.payload.inputs.releaseTag;
           const { owner, repo } = context.repo;
           const release = await github.rest.repos.getReleaseByTag({ owner, repo, tag });
           if (release.data.prerelease) {
