@@ -34,19 +34,7 @@ jobs:
         fi
 
     - name: Check if tag is associated with a pre-release on GitHub
-      uses: actions/github-script@v5
-      with:
-        script: |
-          const tag = context.payload.inputs.releaseTag;
-          const { owner, repo } = context.repo;
-          const release = await github.rest.repos.getReleaseByTag({ owner, repo, tag });
-          if (release.data.prerelease) {
-            console.error(`The provided tag ${tag} is associated with a pre-release on GitHub.`);
-            process.exit(1);
-          }
-
-    - name: Check if tag is associated with a pre-release on GitHub2
-      uses: actions/github-script@v5
+      uses: actions/github-script@v6
       with:
         script: |
           const tag = context.payload.inputs.releaseTag;
