@@ -33,7 +33,20 @@ jobs:
            exit 1
         fi
 
-    - name: Check tag position
+    - name: Check if tag is associated with a pre-release on GitHub
+      uses: actions/github-script@v5
+      with:
+        script: |
+          const tag = "${{ github.event.inputs.releaseTag }}";
+          const { owner, repo } = context.repo;
+          const release = await github.rest.repos.getReleaseByTag({ owner, repo, tag });
+          if (release.data.prerelease) {
+            console.error(`The provided tag ${tag} is associated with a pre-release on GitHub.`);
+            process.exit(1);
+          }
+          return release.data.name; # return the name of the tag
+
+    - name: Check tag position among production releases
       run: |
         # Get all tags sorted by date (latest first) and filter out pre-release tags
         all_tags=($(git tag --sort=-creatordate | grep -v "\.beta" | grep -v "\.hotfix"))
