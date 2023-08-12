@@ -44,7 +44,6 @@ jobs:
             console.error(`The provided tag ${tag} is associated with a pre-release on GitHub.`);
             process.exit(1);
           }
-          return release.data.name; # return the name of the tag
 
     - name: Check tag position among production releases
       run: |
