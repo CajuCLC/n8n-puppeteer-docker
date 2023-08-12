@@ -33,6 +33,13 @@ jobs:
            exit 1
         fi
 
+    - name: Test GitHub Script Action
+      uses: actions/github-script@v5
+      with:
+        script: |
+          console.log('Provided Tag:', context.payload.inputs.releaseTag);
+
+
     - name: Check if tag is associated with a pre-release on GitHub
       uses: actions/github-script@v5
       with:
