@@ -3,9 +3,27 @@ name: Manual Hello World Workflow
 on:
   workflow_dispatch:
     inputs:
-      releaseTag:
-        description: 'Enter the release tag:'
+      stage:
         required: true
+        type: choice
+        description: Stage
+        options:
+          - dev
+          - test
+          - prod
+      regions:
+        required: false
+        type: choice
+        description: Regions
+        options:
+          - us-east-1 us-east-2 us-west-2
+          - us-east-1
+          - us-east-2
+          - us-west-2
+      version:
+        required: true
+        type: string
+        description: Version
 
 jobs:
   check_tag:
@@ -19,16 +37,16 @@ jobs:
 
     - name: Check if tag exists
       run: |
-        if git rev-parse --verify --quiet ${{ github.event.inputs.releaseTag }}; then
-          echo "Tag ${{ github.event.inputs.releaseTag }} exists"
+        if git rev-parse --verify --quiet ${{ github.event.inputs.version }}; then
+          echo "Tag ${{ github.event.inputs.version }} exists"
         else
-          echo "Tag ${{ github.event.inputs.releaseTag }} does not exist"
+          echo "Tag ${{ github.event.inputs.version }} does not exist"
           exit 1
         fi
 
     - name: Validate tag format
       run: |
-        if [[ ! "${{ github.event.inputs.releaseTag }}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
+        if [[ ! "${{ github.event.inputs.version }}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
            echo "Provided tag does not match the desired format or contains .beta/.hotfix."
            exit 1
         fi
@@ -37,7 +55,7 @@ jobs:
       uses: actions/github-script@v6
       with:
         script: |
-          const tag = context.payload.inputs.releaseTag;
+          const tag = context.payload.inputs.version;
           const { owner, repo } = context.repo;
           const release = await github.rest.repos.getReleaseByTag({ owner, repo, tag });
           if (release.data.prerelease) {
@@ -53,7 +71,7 @@ jobs:
         # Get the position of the provided tag
         tag_position=-1
         for i in "${!all_tags[@]}"; do
-           if [[ "${all_tags[$i]}" == "${{ github.event.inputs.releaseTag }}" ]]; then
+           if [[ "${all_tags[$i]}" == "${{ github.event.inputs.version }}" ]]; then
                tag_position=$i
                break
            fi
@@ -77,9 +95,9 @@ jobs:
       id: check_pre_release
       if: needs.check_tag.result == 'success'
       run: |
-        if [[ "${{ github.event.inputs.releaseTag }}" == *".beta" ]]; then
+        if [[ "${{ github.event.inputs.version }}" == *".beta" ]]; then
           echo "release_type=pre-release" >> $GITHUB_OUTPUT
-        elif [[ "${{ github.event.inputs.releaseTag }}" == *".hotfix" ]]; then
+        elif [[ "${{ github.event.inputs.version }}" == *".hotfix" ]]; then
           echo "release_type=hotfix" >> $GITHUB_OUTPUT
         else
           echo "release_type=production" >> $GITHUB_OUTPUT
@@ -93,7 +111,7 @@ jobs:
     steps:
     - name: Print Hello Pre-Release World with Tag
       run: |
-        echo "Hello Pre-Release World! You provided tag: ${{ github.event.inputs.releaseTag }}"
+        echo "Hello Pre-Release World! You provided tag: ${{ github.event.inputs.version }}"
 
   hello_production:
     needs: determine_release
@@ -103,7 +121,7 @@ jobs:
     steps:
     - name: Print Hello Production World with Tag
       run: |
-        echo "Hello Production World! You provided tag: ${{ github.event.inputs.releaseTag }}"
+        echo "Hello Production World! You provided tag: ${{ github.event.inputs.version }}"
 
   hello_hotfix:
     needs: determine_release
@@ -113,4 +131,4 @@ jobs:
     steps:
     - name: Print Hello Hotfix World with Tag
       run: |
-        echo "Hello Hotfix World! You provided tag: ${{ github.event.inputs.releaseTag }}"
+        echo "Hello Hotfix World! You provided tag: ${{ github.event.inputs.version }}"
