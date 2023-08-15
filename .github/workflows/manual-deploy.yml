@@ -1,4 +1,4 @@
-name: Manual Hello World Workflow
+name: Manual Deploy Workflow
 
 on:
   workflow_dispatch:
@@ -26,34 +26,33 @@ on:
         description: Version
 
 jobs:
-  check_tag:
+  validate_input:
     runs-on: ubuntu-latest
+    outputs:
+      is_valid: ${{ steps.validate.outputs.is_valid }}
 
     steps:
-    - name: Checkout
-      uses: actions/checkout@v3
+    - name: Checkout repo
+      uses: actions/checkout@v2
       with:
         fetch-depth: 0
 
-    - name: Check if tag exists
+    - name: Validate input based on environment
+      id: validate
       run: |
-        if git rev-parse --verify --quiet ${{ github.event.inputs.version }}; then
-          echo "Tag ${{ github.event.inputs.version }} exists"
-        else
-          echo "Tag ${{ github.event.inputs.version }} does not exist"
-          exit 1
-        fi
-
-    - name: Validate tag format
-      run: |
-        if [[ ! "${{ github.event.inputs.version }}" =~ ^[0-9]+\.[0-9]+\.[0-9]+$ ]]; then
-           echo "Provided tag does not match the desired format or contains .beta/.hotfix."
-           exit 1
+        if [[ "${{ github.event.inputs.stage }}" == "prod" ]]; then
+          # Validate for prod
+          if [[ "${{ github.event.inputs.version }}" == *".beta" ]]; then
+            echo "Deployment to prod with beta tags is not allowed."
+            exit 1
+          fi
         fi
 
     - name: Check if tag is associated with a pre-release on GitHub
+      if: github.event.inputs.stage == 'prod'
       uses: actions/github-script@v6
       with:
+        github-token: ${{ secrets.GITHUB_TOKEN }}
         script: |
           const tag = context.payload.inputs.version;
           const { owner, repo } = context.repo;
@@ -63,72 +62,23 @@ jobs:
             process.exit(1);
           }
 
-    - name: Check tag position among production releases
+    - name: Validate the position of the selected production tag
+      id: check_position
+      if: github.event.inputs.stage == 'prod'
       run: |
-        # Get all tags sorted by date (latest first) and filter out pre-release tags
-        all_tags=($(git tag --sort=-creatordate | grep -v "\.beta" | grep -v "\.hotfix"))
-        
-        # Get the position of the provided tag
-        tag_position=-1
-        for i in "${!all_tags[@]}"; do
-           if [[ "${all_tags[$i]}" == "${{ github.event.inputs.version }}" ]]; then
-               tag_position=$i
-               break
-           fi
-        done
-        
-        # Check the tag position
-        if [[ $tag_position -gt 4 || $tag_position -lt 0 ]]; then
-           echo "Provided tag is more than 5 tags before the latest or doesn't exist."
-           exit 1
+        PROD_TAGS=$(git tag -l | grep -v ".beta" | tail -5)
+        if ! echo "$PROD_TAGS" | grep -q "${{ github.event.inputs.version }}"; then
+          echo "The selected tag is too old for a prod deployment."
+          exit 1
         fi
 
-  determine_release:
-    needs: check_tag
-    runs-on: ubuntu-latest
-
-    outputs:
-      release: ${{ steps.check_pre_release.outputs.release_type }}
-
-    steps:
-    - name: Check if tag is pre-release
-      id: check_pre_release
-      if: needs.check_tag.result == 'success'
-      run: |
-        if [[ "${{ github.event.inputs.version }}" == *".beta" ]]; then
-          echo "release_type=pre-release" >> $GITHUB_OUTPUT
-        elif [[ "${{ github.event.inputs.version }}" == *".hotfix" ]]; then
-          echo "release_type=hotfix" >> $GITHUB_OUTPUT
-        else
-          echo "release_type=production" >> $GITHUB_OUTPUT
-        fi
-
-  hello_pre_release:
-    needs: determine_release
-    if: needs.determine_release.outputs.release == 'pre-release'
+  deploy:
+    needs: validate_input
     runs-on: ubuntu-latest
 
     steps:
-    - name: Print Hello Pre-Release World with Tag
+    - name: Deploy
       run: |
-        echo "Hello Pre-Release World! You provided tag: ${{ github.event.inputs.version }}"
+        echo "Deploying version ${{ github.event.inputs.version }} to ${{ github.event.inputs.stage }} in regions ${{ github.event.inputs.regions }}..."
+        # Deployment steps...
 
-  hello_production:
-    needs: determine_release
-    if: needs.determine_release.outputs.release == 'production'
-    runs-on: ubuntu-latest
-
-    steps:
-    - name: Print Hello Production World with Tag
-      run: |
-        echo "Hello Production World! You provided tag: ${{ github.event.inputs.version }}"
-
-  hello_hotfix:
-    needs: determine_release
-    if: needs.determine_release.outputs.release == 'hotfix'
-    runs-on: ubuntu-latest
-
-    steps:
-    - name: Print Hello Hotfix World with Tag
-      run: |
-        echo "Hello Hotfix World! You provided tag: ${{ github.event.inputs.version }}"
