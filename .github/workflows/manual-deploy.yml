@@ -62,15 +62,34 @@ jobs:
             process.exit(1);
           }
 
-    - name: Validate the position of the selected production tag
-      id: check_position
+    - name: Check tag position among production releases
       if: github.event.inputs.stage == 'prod'
       run: |
-        PROD_TAGS=$(git tag -l | grep -v ".beta" | tail -5)
-        if ! echo "$PROD_TAGS" | grep -q "${{ github.event.inputs.version }}"; then
-          echo "The selected tag is too old for a prod deployment."
-          exit 1
+        # Get all tags sorted by date (latest first) and filter out pre-release tags
+        all_tags=($(git tag --sort=-creatordate | grep -v "\.beta" | grep -v "\.hotfix"))
+
+        # Debug output
+        echo "All tags:"
+        echo "${all_tags[@]}"
+
+        # Get the position of the provided tag
+        tag_position=-1
+        for i in "${!all_tags[@]}"; do
+           if [[ "${all_tags[$i]}" == "${{ github.event.inputs.version }}" ]]; then
+               tag_position=$i
+               break
+           fi
+        done
+
+        # Debug output
+        echo "Position of the provided tag: $tag_position"
+
+        # Check the tag position
+        if [[ $tag_position -gt 4 || $tag_position -lt 0 ]]; then
+           echo "Provided tag is more than 5 tags before the latest or doesn't exist."
+           exit 1
         fi
+      
 
   deploy:
     needs: validate_input
