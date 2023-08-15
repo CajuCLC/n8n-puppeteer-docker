@@ -84,7 +84,7 @@ jobs:
       run: |
         # Get all tags sorted by date (latest first) and filter out pre-release tags
         all_tags=($(git tag --sort=-creatordate | grep -v "\.beta" | grep -v "\.hotfix"))
-
+        
         # Debug output
         echo "All tags:"
         echo "${all_tags[@]}"
@@ -101,12 +101,13 @@ jobs:
         # Debug output
         echo "Position of the provided tag: $tag_position"
 
+        max_position=${MAX_TAG_POSITION:-5}  # Default to 5 if the environment variable isn't set
+
         # Check the tag position
-        if [[ $tag_position -gt 4 || $tag_position -lt 0 ]]; then
-           echo "Provided tag is more than 5 tags before the latest or doesn't exist."
+        if [[ $tag_position -ge $max_position || $tag_position -lt 0 ]]; then
+           echo "Provided tag is more than $max_position tags before the latest or doesn't exist."
            exit 1
         fi
-      
 
   deploy:
     needs: validate_input
@@ -117,4 +118,3 @@ jobs:
       run: |
         echo "Deploying version ${{ github.event.inputs.version }} to ${{ github.event.inputs.stage }} in regions ${{ github.event.inputs.regions }}..."
         # Deployment steps...
-
