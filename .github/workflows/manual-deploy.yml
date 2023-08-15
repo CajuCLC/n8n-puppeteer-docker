@@ -33,7 +33,7 @@ jobs:
 
     steps:
     - name: Checkout repo
-      uses: actions/checkout@v2
+      uses: actions/checkout@v3
       with:
         fetch-depth: 0
 
@@ -48,8 +48,25 @@ jobs:
           fi
         fi
 
+    - name: Determine if version is a commit hash (SHA)
+      id: check_sha
+      run: |
+        if [[ "${{ github.event.inputs.version }}" =~ ^[0-9a-f]{40}$ ]]; then
+          echo "version_type=hash" >> $GITHUB_OUTPUT
+        else
+          echo "version_type=tag_or_release" >> $GITHUB_OUTPUT
+        fi
+
+    - name: Validate commit hash exists (if version is a hash)
+      if: steps.check_sha.outputs.version_type == 'hash'
+      run: |
+        if ! git cat-file -e ${{ github.event.inputs.version }}^{commit}; then
+          echo "The provided commit hash does not exist."
+          exit 1
+        fi
+
     - name: Check if tag is associated with a pre-release on GitHub
-      if: github.event.inputs.stage == 'prod'
+      if: github.event.inputs.stage == 'prod' && steps.check_sha.outputs.version_type == 'tag_or_release'
       uses: actions/github-script@v6
       with:
         github-token: ${{ secrets.GITHUB_TOKEN }}
@@ -63,7 +80,7 @@ jobs:
           }
 
     - name: Check tag position among production releases
-      if: github.event.inputs.stage == 'prod'
+      if: github.event.inputs.stage == 'prod' && steps.check_sha.outputs.version_type == 'tag_or_release'
       run: |
         # Get all tags sorted by date (latest first) and filter out pre-release tags
         all_tags=($(git tag --sort=-creatordate | grep -v "\.beta" | grep -v "\.hotfix"))
