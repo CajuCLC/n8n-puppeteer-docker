@@ -51,7 +51,7 @@ jobs:
     - name: Determine if version is a commit hash (SHA)
       id: check_sha
       run: |
-        if [[ "${{ github.event.inputs.version }}" =~ ^[0-9a-f]{40}$ ]]; then
+        if [[ "${{ github.event.inputs.version }}" =~ ^[0-9a-f]{7,40}$ ]]; then
           echo "version_type=hash" >> $GITHUB_OUTPUT
         else
           echo "version_type=tag_or_release" >> $GITHUB_OUTPUT
