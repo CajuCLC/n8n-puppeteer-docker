@@ -1,4 +1,4 @@
-name: Manual Deploy Workflow
+name: Rollback Deploy Workflow
 
 on:
   workflow_dispatch:
